@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DigitalniCjenik.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace DigitalniCjenik.Data
@@ -10,8 +11,8 @@ namespace DigitalniCjenik.Data
         {
         }
 
-       // public DbSet<Uloga> Uloga { get; set; }
-        //public DbSet<Korisnik> Korisnici { get; set; }
+        public DbSet<Uloga> Uloge { get; set; }
+        public DbSet<Korisnik> Korisnici { get; set; }
 
     }
 }
