@@ -1,11 +1,11 @@
 ﻿namespace DigitalniCjenik.Models
 {
-    public class Uloga
+    public class Jezik
     {
         public int ID { get; set; }
         public string? Naziv { get; set; }
-        public string? OpisPrava { get; set; }
+        public string? KodJezika { get; set; }
 
-        public ICollection<Korisnik>? Korisnici { get; set; }
+        public ICollection<Prijevod>? Prijevodi { get; set; }
     }
 }
