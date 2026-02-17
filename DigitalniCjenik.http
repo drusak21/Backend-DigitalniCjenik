@@ -1,0 +1,6 @@
+@DigitalniCjenik_HostAddress = http://localhost:5148
+
+GET {{DigitalniCjenik_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
