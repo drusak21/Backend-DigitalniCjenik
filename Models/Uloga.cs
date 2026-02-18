@@ -1,4 +1,6 @@
-﻿namespace DigitalniCjenik.Models
+﻿using System.Text.Json.Serialization;
+
+namespace DigitalniCjenik.Models
 {
     public class Uloga
     {
@@ -6,6 +8,7 @@
         public string? Naziv { get; set; }
         public string? OpisPrava { get; set; }
 
+        [JsonIgnore]
         public ICollection<Korisnik>? Korisnici { get; set; }
     }
 }
