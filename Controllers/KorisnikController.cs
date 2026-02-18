@@ -88,7 +88,11 @@ namespace DigitalniCjenik.Controllers
             }
 
             if (!string.IsNullOrEmpty(dto.Lozinka))
+            {
                 PasswordHasher.CreatePasswordHash(dto.Lozinka, out byte[] hash, out byte[] salt);
+                korisnik.LozinkaHash = hash;
+                korisnik.LozinkaSalt = salt;
+            }
 
             if (dto.Aktivnost.HasValue)
                 korisnik.Aktivnost = dto.Aktivnost.Value;

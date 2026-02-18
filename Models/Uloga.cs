@@ -8,7 +8,6 @@ namespace DigitalniCjenik.Models
         public string? Naziv { get; set; }
         public string? OpisPrava { get; set; }
 
-        [JsonIgnore]
         public ICollection<Korisnik>? Korisnici { get; set; }
     }
 }
