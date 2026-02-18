@@ -1,7 +1,9 @@
 ﻿using DigitalniCjenik.Data;
 using DigitalniCjenik.DTO;
+using DigitalniCjenik.Models;
 using DigitalniCjenik.Security;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,10 +16,10 @@ namespace DigitalniCjenik.Services
         private readonly DigitalniCjenikContext _context;
         private readonly JwtSettings _jwt;
 
-        public AuthService(DigitalniCjenikContext context, JwtSettings jwt)
+        public AuthService(DigitalniCjenikContext context, IOptions<JwtSettings> jwtOptions)
         {
             _context = context;
-            _jwt = jwt;
+            _jwt = jwtOptions.Value;
         }
 
         public LoginResponseDTO? Login(LoginRequestDTO request)
@@ -73,5 +75,41 @@ namespace DigitalniCjenik.Services
             };
 
         }
+
+        public async Task<bool> Register(RegisterRequestDTO request)
+        {
+            // Provjera da li već postoji korisnik s istim emailom
+            if (_context.Korisnici.Any(k => k.Email == request.Email))
+                return false;
+
+            // Provjera da li je lozinka null
+            if (string.IsNullOrEmpty(request.Lozinka))
+                return false;
+
+            // Generiranje hash i salt koristeći PasswordHasher
+            PasswordHasher.CreatePasswordHash(
+                request.Lozinka,
+                out byte[] passwordHash,
+                out byte[] passwordSalt
+            );
+
+            // Kreiranje novog korisnika
+            var korisnik = new Korisnik
+            {
+                ImePrezime = request.ImePrezime,
+                Email = request.Email,
+                LozinkaHash = passwordHash,
+                LozinkaSalt = passwordSalt,
+                UlogaID = request.UlogaID,
+                JezikSučelja = "HR",
+                Aktivnost = true
+            };
+
+            _context.Korisnici.Add(korisnik);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
     }
 }

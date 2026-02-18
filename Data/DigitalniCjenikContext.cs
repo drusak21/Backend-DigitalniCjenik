@@ -11,6 +11,15 @@ namespace DigitalniCjenik.Data
         {
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Korisnik>()
+                .ToTable("Korisnik"); // mapira DbSet Korisnici → tablica Korisnik
+
+            modelBuilder.Entity<Uloga>()
+                .ToTable("Uloga");
+        }
+
         public DbSet<Uloga> Uloge { get; set; }
         public DbSet<Korisnik> Korisnici { get; set; }
 
