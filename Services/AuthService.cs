@@ -26,14 +26,26 @@ namespace DigitalniCjenik.Services
                 .Include(k => k.Uloga)
                 .FirstOrDefault(k => k.Email == request.Email);
 
-            if (korisnik == null || korisnik.Lozinka != request.Lozinka)
+            if (korisnik == null)
                 return null;
 
-            var claims = new List<Claim>
+            if (request.Lozinka == null || korisnik.LozinkaHash == null || korisnik.LozinkaSalt == null)
+                return null;
+
+            var isValidPassword = PasswordHasher.VerifyPassword(
+                request.Lozinka,
+                korisnik.LozinkaHash,
+                korisnik.LozinkaSalt
+            );
+
+            if (!isValidPassword)
+                return null;
+
+            var claims = new[]
             {
-             new Claim(ClaimTypes.NameIdentifier, korisnik.ID.ToString()),
-             new Claim(ClaimTypes.Email, korisnik.Email ?? string.Empty),
-             new Claim(ClaimTypes.Role, korisnik.Uloga?.Naziv ?? string.Empty)
+                new Claim(ClaimTypes.NameIdentifier, korisnik.ID.ToString()),
+                new Claim(ClaimTypes.Email, korisnik.Email ?? string.Empty),
+                new Claim(ClaimTypes.Role, korisnik.Uloga?.Naziv ?? string.Empty)
             };
 
             var key = new SymmetricSecurityKey(
@@ -46,9 +58,9 @@ namespace DigitalniCjenik.Services
             );
 
             var token = new JwtSecurityToken(
-                issuer: _jwt.Issuer,
-                audience: _jwt.Audience,
-                claims: claims,
+                _jwt.Issuer,
+                _jwt.Audience,
+                claims,
                 expires: DateTime.Now.AddMinutes(_jwt.ExpirationMinutes),
                 signingCredentials: creds
             );
@@ -59,7 +71,7 @@ namespace DigitalniCjenik.Services
                 Uloga = korisnik.Uloga?.Naziv ?? string.Empty,
                 ImePrezime = korisnik.ImePrezime
             };
-        }
 
+        }
     }
 }
