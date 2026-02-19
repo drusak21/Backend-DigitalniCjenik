@@ -40,12 +40,6 @@ namespace DigitalniCjenik.Data
                 .WithMany(u => u.Objekti)
                 .HasForeignKey(o => o.UgostiteljID)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Objekt>()
-                .HasOne(o => o.Putnik)
-                .WithMany(k => k.Objekti)
-                .HasForeignKey(o => o.PutnikID)
-                .OnDelete(DeleteBehavior.Restrict);
         }
 
         public DbSet<Uloga> Uloge { get; set; }
