@@ -16,7 +16,7 @@
 
         public ICollection<Cjenik>? Cjenici { get; set; }
         public ICollection<Akcija>? Akcije { get; set; }
-        public ICollection<Banner>? Bannere { get; set; }
+        public ICollection<Banner>? Banneri { get; set; }
         public ICollection<QRKod>? QRKodovi { get; set; }
         public ICollection<Analitika>? Analitika { get; set; }
         public ICollection<Datoteka>? Datoteke { get; set; }
