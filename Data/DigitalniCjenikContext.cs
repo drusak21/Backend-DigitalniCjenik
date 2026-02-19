@@ -20,6 +20,8 @@ namespace DigitalniCjenik.Data
             modelBuilder.Entity<Ugostitelj>().ToTable("Ugostitelj");
 
             modelBuilder.Entity<Objekt>().ToTable("Objekt");
+            modelBuilder.Entity<Analitika>().ToTable("Analitika");
+            modelBuilder.Entity<QRKod>().ToTable("QRKod");
 
             // Korisnik → Uloga (više korisnika, jedna uloga)
             modelBuilder.Entity<Korisnik>()
@@ -46,6 +48,8 @@ namespace DigitalniCjenik.Data
         public DbSet<Korisnik> Korisnici { get; set; }
         public DbSet<Ugostitelj> Ugostitelji { get; set; }
         public DbSet<Objekt> Objekti { get; set; }
+        public DbSet<Analitika> Analitika { get; set; }
+        public DbSet<QRKod> QRKod { get; set; }
 
     }
 }

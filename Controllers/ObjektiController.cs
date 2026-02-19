@@ -183,6 +183,16 @@ namespace DigitalniCjenik.Controllers
                 _context.Objekti.Add(objekt);
                 await _context.SaveChangesAsync();
 
+                var qrKod = new QRKod
+                {
+                    Kod = qrText,
+                    ObjektID = objekt.ID,
+                    DatumGeneriranja = DateTime.UtcNow,
+                    BrojSkeniranja = 0
+                };
+                _context.QRKod.Add(qrKod);
+                await _context.SaveChangesAsync();
+
                 _logger.LogInformation("Kreiran novi objekt {Naziv} za ugostitelja {UgostiteljID}",
                     objekt.Naziv, objekt.UgostiteljID);
 
@@ -378,7 +388,8 @@ namespace DigitalniCjenik.Controllers
                 if (!objekt.Aktivnost)
                     return BadRequest("Objekt je trenutno neaktivan");
 
-                // Zabilježi skeniranje u analitiku
+
+                // 1. Zabilježi skeniranje u analitiku
                 var analitika = new Analitika
                 {
                     TipDogadaja = "QR scan",
@@ -386,9 +397,27 @@ namespace DigitalniCjenik.Controllers
                     ObjektID = objekt.ID,
                     DodatniParametri = $"QR kod: {qrKod}"
                 };
-               
+                _context.Analitika.Add(analitika);  // Dodaj u Analitiku
+
+                var qrKodEntity = await _context.QRKod.FirstOrDefaultAsync(q => q.Kod == qrKod);
+                if (qrKodEntity != null)
+                {
+                    qrKodEntity.BrojSkeniranja++;
+                }
+                else
+                {
+                    var noviQRKod = new QRKod
+                    {
+                        Kod = qrKod,
+                        ObjektID = objekt.ID,
+                        DatumGeneriranja = DateTime.UtcNow,
+                        BrojSkeniranja = 1
+                    };
+                    _context.QRKod.Add(noviQRKod);
+                }
 
                 await _context.SaveChangesAsync();
+
 
                 var result = new ObjektReadDTO
                 {
@@ -413,7 +442,7 @@ namespace DigitalniCjenik.Controllers
             }
         }
 
-       
+
 
         private string GenerateQrCodeBase64(string text)
         {
