@@ -49,9 +49,29 @@ namespace DigitalniCjenik.Controllers
         [Authorize(Roles = "Administrator,Ugostitelj")]
         public async Task<IActionResult> CreateArtikl(ArtiklCreateDTO dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.Naziv))
+                return BadRequest("Naziv artikla je obavezan.");
+
+            var postoji = await _context.Artikli
+                .AnyAsync(a => a.Naziv != null &&
+                              a.Naziv.ToLower() == dto.Naziv.ToLower());
+
+            if (postoji)
+                return BadRequest($"Artikl s nazivom '{dto.Naziv}' već postoji.");
+
+            if (dto.Cijena <= 0)
+                return BadRequest("Cijena mora biti veća od 0.");
+
+            if (dto.KategorijaID.HasValue)
+            {
+                var kategorija = await _context.Kategorije.FindAsync(dto.KategorijaID);
+                if (kategorija == null)
+                    return BadRequest("Odabrana kategorija ne postoji.");
+            }
+
             var artikl = new Artikl
             {
-                Naziv = dto.Naziv,
+                Naziv = dto.Naziv.Trim(), 
                 Opis = dto.Opis,
                 Cijena = dto.Cijena,
                 SastavAlergeni = dto.SastavAlergeni,
@@ -64,7 +84,12 @@ namespace DigitalniCjenik.Controllers
             _context.Artikli.Add(artikl);
             await _context.SaveChangesAsync();
 
-            return Ok("Artikl uspješno kreiran.");
+            return Ok(new
+            {
+                message = "Artikl uspješno kreiran.",
+                id = artikl.ID,
+                naziv = artikl.Naziv
+            });
         }
 
         // PUT: api/artikli/{id}
@@ -76,8 +101,8 @@ namespace DigitalniCjenik.Controllers
             if (artikl == null)
                 return NotFound("Artikl ne postoji.");
 
-            if (artikl.Zakljucan)
-                return BadRequest("Ovaj artikl je zaključan i ne može se uređivati.");
+            if (artikl.Zakljucan && !User.IsInRole("Administrator"))
+                return BadRequest("Ovaj artikl je zaključan i samo administrator ga može uređivati.");
 
             if (dto.Naziv != null) artikl.Naziv = dto.Naziv;
             if (dto.Opis != null) artikl.Opis = dto.Opis;
@@ -99,9 +124,6 @@ namespace DigitalniCjenik.Controllers
             var artikl = await _context.Artikli.FindAsync(id);
             if (artikl == null)
                 return NotFound("Artikl ne postoji.");
-
-            if (artikl.Zakljucan)
-                return BadRequest("Zaključani artikl se ne može obrisati.");
 
             _context.Artikli.Remove(artikl);
             await _context.SaveChangesAsync();
