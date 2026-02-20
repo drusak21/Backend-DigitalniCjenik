@@ -9,7 +9,6 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -17,7 +16,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    // JWT Authorization u Swaggeru
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Primjer: 'Bearer {token}'",
@@ -52,6 +50,26 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings")
 );
+
+// LDAP Settings
+builder.Services.Configure<LdapSettings>(
+    builder.Configuration.GetSection("Ldap")
+);
+
+//  LDAP Service (Mock ili pravi)
+var ldapSettings = builder.Configuration.GetSection("Ldap").Get<LdapSettings>();
+if (ldapSettings?.UseMock == true)
+{
+    builder.Services.AddScoped<ILdapService, MockLdapService>();
+    Console.WriteLine("Using MOCK LDAP service for development");
+}
+else
+{
+    // Ako nije mock, ipak koristi mock za razvoj
+    builder.Services.AddScoped<ILdapService, MockLdapService>();
+    Console.WriteLine("Using MOCK LDAP service for development");
+}
+
 
 // Authentication (JWT)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -103,12 +121,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
