@@ -25,6 +25,7 @@ namespace DigitalniCjenik.Controllers
         {
             var query = _context.Akcije
                 .Include(a => a.Objekt)
+                .Include(a => a.Artikl)
                 .AsQueryable();
 
             if (aktivneSamo)
@@ -47,7 +48,9 @@ namespace DigitalniCjenik.Controllers
                     Slika = a.Slika,
                     Aktivna = a.Aktivna,
                     ObjektID = a.ObjektID,
-                    ObjektNaziv = a.Objekt != null ? a.Objekt.Naziv : null
+                    ObjektNaziv = a.Objekt != null ? a.Objekt.Naziv : null,
+                    ArtiklID = a.ArtiklID,
+                    ArtiklNaziv = a.Artikl != null ? a.Artikl.Naziv : null
                 })
                 .ToListAsync();
 
@@ -89,6 +92,7 @@ namespace DigitalniCjenik.Controllers
         {
             var akcija = await _context.Akcije
                 .Include(a => a.Objekt)
+                .Include(a => a.Artikl)
                 .FirstOrDefaultAsync(a => a.ID == id);
 
             if (akcija == null)
@@ -105,7 +109,9 @@ namespace DigitalniCjenik.Controllers
                 Slika = akcija.Slika,
                 Aktivna = akcija.Aktivna,
                 ObjektID = akcija.ObjektID,
-                ObjektNaziv = akcija.Objekt?.Naziv
+                ObjektNaziv = akcija.Objekt?.Naziv,
+                ArtiklID = akcija.ArtiklID,
+                ArtiklNaziv = akcija.Artikl?.Naziv
             };
 
             return Ok(dto);
@@ -145,6 +151,7 @@ namespace DigitalniCjenik.Controllers
                 DatumZavrsetka = zavrsetak,    
                 Slika = dto.Slika,
                 ObjektID = dto.ObjektID,
+                ArtiklID = dto.ArtiklID,
                 Aktivna = true
             };
 
@@ -153,6 +160,7 @@ namespace DigitalniCjenik.Controllers
 
             var kreiranaAkcija = await _context.Akcije
                 .Include(a => a.Objekt)
+                .Include(a => a.Artikl)
                 .FirstOrDefaultAsync(a => a.ID == akcija.ID);
 
             var resultDto = new AkcijaDTO
@@ -166,7 +174,9 @@ namespace DigitalniCjenik.Controllers
                 Slika = kreiranaAkcija.Slika,
                 Aktivna = kreiranaAkcija.Aktivna,
                 ObjektID = kreiranaAkcija.ObjektID,
-                ObjektNaziv = kreiranaAkcija.Objekt?.Naziv
+                ObjektNaziv = kreiranaAkcija.Objekt?.Naziv,
+                ArtiklID = kreiranaAkcija.ArtiklID,
+                ArtiklNaziv = kreiranaAkcija.Artikl?.Naziv
             };
 
             return CreatedAtAction(nameof(GetAkcija), new { id = akcija.ID }, resultDto);
@@ -197,6 +207,9 @@ namespace DigitalniCjenik.Controllers
 
             if (dto.ObjektID != akcija.ObjektID)
                 akcija.ObjektID = dto.ObjektID;
+
+            if (dto.ArtiklID != akcija.ArtiklID)
+                akcija.ArtiklID = dto.ArtiklID;
 
             await _context.SaveChangesAsync();
             return Ok("Akcija uspješno ažurirana.");

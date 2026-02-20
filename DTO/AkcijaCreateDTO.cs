@@ -9,5 +9,6 @@
         public DateTime? DatumZavrsetka { get; set; }
         public string? Slika { get; set; }
         public int? ObjektID { get; set; }
+        public int? ArtiklID { get; set; }
     }
 }

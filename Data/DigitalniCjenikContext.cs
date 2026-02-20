@@ -146,6 +146,11 @@ namespace DigitalniCjenik.Data
                     .HasForeignKey(a => a.ObjektID)
                     .OnDelete(DeleteBehavior.SetNull);
 
+                entity.HasOne(a => a.Artikl)
+                    .WithMany(a => a.Akcije)  
+                    .HasForeignKey(a => a.ArtiklID)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 entity.HasIndex(a => a.Aktivna);
                 entity.HasIndex(a => a.Vrsta);
             });

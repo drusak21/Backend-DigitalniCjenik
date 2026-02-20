@@ -12,6 +12,8 @@
         public bool Aktivna { get; set; }
         public int? ObjektID { get; set; }
         public string? ObjektNaziv { get; set; }
+        public int? ArtiklID { get; set; }
+        public string? ArtiklNaziv { get; set; }
         public bool AktivnaSada => Aktivna &&
         (!DatumPocetka.HasValue || DatumPocetka.Value.ToUniversalTime() <= DateTime.UtcNow) &&
         (!DatumZavrsetka.HasValue || DatumZavrsetka.Value.ToUniversalTime() >= DateTime.UtcNow);

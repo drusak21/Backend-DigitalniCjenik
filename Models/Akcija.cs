@@ -17,6 +17,9 @@ namespace DigitalniCjenik.Models
         public int? ObjektID { get; set; }
         public Objekt? Objekt { get; set; }
 
+        public int? ArtiklID { get; set; }  
+        public Artikl? Artikl { get; set; }
+
         public ICollection<Banner>? Banneri { get; set; }
     }
 }

@@ -15,5 +15,6 @@
         public Kategorija? Kategorija { get; set; }
 
         public ICollection<CjenikArtikl>? CjenikArtikli { get; set; }
+        public ICollection<Akcija>? Akcije { get; set; }
     }
 }
