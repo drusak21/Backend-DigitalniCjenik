@@ -57,13 +57,22 @@ namespace DigitalniCjenik.Controllers
             if (string.IsNullOrEmpty(dto.Naziv))
                 return BadRequest("Naziv je obavezan.");
 
-            if (!await _context.Korisnici.AnyAsync(k => k.ID == dto.KorisnikID))
+            var korisnik = await _context.Korisnici
+                .Include(k => k.Uloga)
+                .FirstOrDefaultAsync(k => k.ID == dto.KorisnikID);
+
+            if (korisnik == null)
                 return BadRequest("Korisnik ne postoji.");
+
+            if (korisnik.Uloga == null || korisnik.Uloga.Naziv != "Ugostitelj")
+                return BadRequest("Korisnik nije u ulozi Ugostitelj.");
 
             var ugostitelj = new Ugostitelj
             {
                 Naziv = dto.Naziv,
                 OIB = dto.OIB,
+                KontaktEmail = dto.KontaktEmail,
+                KontaktTelefon = dto.KontaktTelefon,
                 KorisnikID = dto.KorisnikID,
             };
 
@@ -90,6 +99,43 @@ namespace DigitalniCjenik.Controllers
             await _context.SaveChangesAsync();
 
             return Ok("Ugostitelj ažuriran.");
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> DeleteUgostitelj(int id)
+        {
+            try
+            {
+                var ugostitelj = await _context.Ugostitelji
+                    .Include(u => u.Objekti) 
+                    .FirstOrDefaultAsync(u => u.ID == id);
+
+                if (ugostitelj == null)
+                    return NotFound("Ugostitelj nije pronađen.");
+
+                if (ugostitelj.Objekti != null && ugostitelj.Objekti.Any())
+                {
+                    var povezaniObjekti = ugostitelj.Objekti
+                        .Select(o => new { o.ID, o.Naziv })
+                        .ToList();
+
+                    return BadRequest(new
+                    {
+                        poruka = "Ugostitelj se ne može obrisati jer ima povezane objekte.",
+                        objekti = povezaniObjekti
+                    });
+                }
+
+                _context.Ugostitelji.Remove(ugostitelj);
+                await _context.SaveChangesAsync();
+
+                return Ok("Ugostitelj uspješno obrisan.");
+            }
+            catch (Exception )
+            {
+                return StatusCode(500, "Došlo je do greške pri brisanju ugostitelja.");
+            }
         }
 
 
