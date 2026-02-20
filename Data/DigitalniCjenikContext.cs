@@ -177,7 +177,7 @@ namespace DigitalniCjenik.Data
                 entity.Property(a => a.TipDogadaja).HasMaxLength(50);
 
                 entity.HasOne(a => a.Objekt)
-                    .WithMany()
+                    .WithMany(o => o.Analitika) 
                     .HasForeignKey(a => a.ObjektID)
                     .OnDelete(DeleteBehavior.SetNull);
 
@@ -186,7 +186,6 @@ namespace DigitalniCjenik.Data
                     .HasForeignKey(a => a.CjenikID)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                // Indeksi za brže pretrage
                 entity.HasIndex(a => a.TipDogadaja);
                 entity.HasIndex(a => a.DatumVrijeme);
                 entity.HasIndex(a => a.ObjektID);
