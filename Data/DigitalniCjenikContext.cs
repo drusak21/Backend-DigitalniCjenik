@@ -24,6 +24,8 @@ namespace DigitalniCjenik.Data
             modelBuilder.Entity<QRKod>().ToTable("QRKod");
             modelBuilder.Entity<Kategorija>().ToTable("Kategorija");
             modelBuilder.Entity<Artikl>().ToTable("Artikl");
+            modelBuilder.Entity<Cjenik>().ToTable("Cjenik");
+            modelBuilder.Entity<CjenikArtikl>().ToTable("CjenikArtikl");
 
             // Korisnik → Uloga (više korisnika, jedna uloga)
             modelBuilder.Entity<Korisnik>()
@@ -86,6 +88,51 @@ namespace DigitalniCjenik.Data
                 entity.HasIndex(k => k.Naziv);
                 entity.HasIndex(k => k.Aktivan);
             });
+
+            modelBuilder.Entity<Cjenik>(entity =>
+            {
+                entity.HasKey(c => c.ID);
+                entity.Property(c => c.Naziv).HasMaxLength(100);
+                entity.Property(c => c.Status).HasMaxLength(20); // "u pripremi", "na potvrdi", "aktivan", "arhiviran"
+
+                // Veza s Objektom
+                entity.HasOne(c => c.Objekt)
+                    .WithMany(o => o.Cjenici)
+                    .HasForeignKey(c => c.ObjektID)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                
+
+                // Indeksi
+                entity.HasIndex(c => new { c.ObjektID, c.Status });
+            });
+
+            modelBuilder.Entity<CjenikArtikl>(entity =>
+            {
+                entity.HasKey(ca => ca.ID);
+
+                // Unique constraint - jedan artikl jednom u cjeniku
+                entity.HasIndex(ca => new { ca.CjenikID, ca.ArtiklID })
+                    .IsUnique();
+
+                entity.Property(ca => ca.Cijena)
+                    .HasColumnType("decimal(10,2)");
+
+                // Veza s Cjenikom
+                entity.HasOne(ca => ca.Cjenik)
+                    .WithMany(c => c.CjenikArtikli)
+                    .HasForeignKey(ca => ca.CjenikID)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Veza s Artiklom
+                entity.HasOne(ca => ca.Artikl)
+                    .WithMany(a => a.CjenikArtikli)
+                    .HasForeignKey(ca => ca.ArtiklID)
+                    .OnDelete(DeleteBehavior.Restrict); // Ne želimo obrisati artikl ako se obriše iz cjenika
+
+                entity.HasIndex(ca => ca.RedoslijedPrikaza);
+            });
+
         }
 
         public DbSet<Uloga> Uloge { get; set; }
@@ -96,6 +143,8 @@ namespace DigitalniCjenik.Data
         public DbSet<QRKod> QRKod { get; set; }
         public DbSet<Kategorija> Kategorije { get; set; }
         public DbSet<Artikl> Artikli { get; set; }
+        public DbSet<Cjenik> Cjenici { get; set; }
+        public DbSet<CjenikArtikl> CjenikArtikli { get; set; }
 
     }
 }
