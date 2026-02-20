@@ -11,6 +11,6 @@
         public Objekt? Objekt { get; set; }
 
         public int? CjenikID { get; set; }
-        public Cjenik? Banneri { get; set; }
+        public Cjenik? Cjenik { get; set; }
     }
 }

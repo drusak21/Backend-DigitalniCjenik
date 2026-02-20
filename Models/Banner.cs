@@ -8,7 +8,7 @@
         public bool Aktivan { get; set; } = true;
 
         public int? ObjektID { get; set; }
-        public Objekt? Banneri { get; set; }
+        public Objekt? Objekt { get; set; }
 
         public int? AkcijaID { get; set; }
         public Akcija? Akcija { get; set; }

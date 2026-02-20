@@ -26,6 +26,8 @@ namespace DigitalniCjenik.Data
             modelBuilder.Entity<Artikl>().ToTable("Artikl");
             modelBuilder.Entity<Cjenik>().ToTable("Cjenik");
             modelBuilder.Entity<CjenikArtikl>().ToTable("CjenikArtikl");
+            modelBuilder.Entity<Akcija>().ToTable("Akcija");
+            modelBuilder.Entity<Banner>().ToTable("Banner");
 
             // Korisnik → Uloga (više korisnika, jedna uloga)
             modelBuilder.Entity<Korisnik>()
@@ -133,6 +135,63 @@ namespace DigitalniCjenik.Data
                 entity.HasIndex(ca => ca.RedoslijedPrikaza);
             });
 
+            modelBuilder.Entity<Akcija>(entity =>
+            {
+                entity.HasKey(a => a.ID);
+                entity.Property(a => a.Naziv).HasMaxLength(100);
+                entity.Property(a => a.Vrsta).HasMaxLength(20);
+
+                entity.HasOne(a => a.Objekt)
+                    .WithMany(o => o.Akcije) 
+                    .HasForeignKey(a => a.ObjektID)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(a => a.Aktivna);
+                entity.HasIndex(a => a.Vrsta);
+            });
+
+            modelBuilder.Entity<Banner>(entity =>
+            {
+                entity.HasKey(b => b.ID);
+                entity.Property(b => b.Tip).HasMaxLength(20);
+
+                // Banner → Objekt
+                entity.HasOne(b => b.Objekt)
+                    .WithMany(o => o.Banneri)  // ← Objekt ima kolekciju Bannera
+                    .HasForeignKey(b => b.ObjektID)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                // Banner → Akcija
+                entity.HasOne(b => b.Akcija)
+                    .WithMany(a => a.Banneri)
+                    .HasForeignKey(b => b.AkcijaID)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(b => b.Tip);
+                entity.HasIndex(b => b.Aktivan);
+            });
+
+            modelBuilder.Entity<Analitika>(entity =>
+            {
+                entity.HasKey(a => a.ID);
+                entity.Property(a => a.TipDogadaja).HasMaxLength(50);
+
+                entity.HasOne(a => a.Objekt)
+                    .WithMany()
+                    .HasForeignKey(a => a.ObjektID)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(a => a.Cjenik)
+                    .WithMany(c => c.Analitika)
+                    .HasForeignKey(a => a.CjenikID)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                // Indeksi za brže pretrage
+                entity.HasIndex(a => a.TipDogadaja);
+                entity.HasIndex(a => a.DatumVrijeme);
+                entity.HasIndex(a => a.ObjektID);
+            });
+
         }
 
         public DbSet<Uloga> Uloge { get; set; }
@@ -145,6 +204,8 @@ namespace DigitalniCjenik.Data
         public DbSet<Artikl> Artikli { get; set; }
         public DbSet<Cjenik> Cjenici { get; set; }
         public DbSet<CjenikArtikl> CjenikArtikli { get; set; }
+        public DbSet<Akcija> Akcije { get; set; }
+        public DbSet<Banner> Banneri { get; set; }
 
     }
 }
