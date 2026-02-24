@@ -428,13 +428,16 @@ namespace DigitalniCjenik.Controllers
             }
         }
 
-        private static string GenerateQrCodeBase64(string text)
+        private static string GenerateQrCodeBase64(string qrKod)
         {
-            if (string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(qrKod))
                 return string.Empty;
 
+            var frontendUrl = "http://localhost:4200"; // Web domena stranice
+            var puniUrl = $"{frontendUrl}/cjenik/{qrKod}";  
+
             using var qrGenerator = new QRCodeGenerator();
-            using var data = qrGenerator.CreateQrCode(text, QRCodeGenerator.ECCLevel.Q);
+            using var data = qrGenerator.CreateQrCode(puniUrl, QRCodeGenerator.ECCLevel.Q);
             var qr = new Base64QRCode(data);
             return qr.GetGraphic(20);
         }
