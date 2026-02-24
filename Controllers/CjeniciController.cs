@@ -21,6 +21,7 @@ namespace DigitalniCjenik.Controllers
 
         // GET: api/cjenici/objekt/{objektId}
         [HttpGet("objekt/{objektId}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetCjenici(int objektId)
         {
             var cjenici = await _context.Cjenici
