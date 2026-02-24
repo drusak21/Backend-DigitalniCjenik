@@ -27,7 +27,11 @@ namespace DigitalniCjenik.Controllers
                 {
                     ID = u.ID,
                     Naziv = u.Naziv,
+                    KontaktEmail = u.KontaktEmail,        
+                    KontaktTelefon = u.KontaktTelefon,    
                     OIB = u.OIB,
+                    Logotip = u.Logotip,                  
+                    BrandingBoje = u.BrandingBoje,       
                     KorisnikID = u.KorisnikID
                 })
                 .ToListAsync();

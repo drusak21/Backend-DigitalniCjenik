@@ -32,11 +32,9 @@ namespace DigitalniCjenik.Controllers
                 var role = User.FindFirstValue(ClaimTypes.Role);
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
-                var query = _context.Objekti
-                    .Include(o => o.Ugostitelj)
-                    .Include(o => o.Putnik)
-                    .AsQueryable();
+                var query = _context.Objekti.AsQueryable();
 
+                // Filtriranje prema ulogama
                 if (role == "Putnik")
                 {
                     query = query.Where(o => o.PutnikID == userId);
@@ -55,23 +53,24 @@ namespace DigitalniCjenik.Controllers
                     query = query.Where(o => o.UgostiteljID == ugostitelj.ID);
                 }
 
-                var objekti = await query.ToListAsync();
+                // LEFT JOIN - koristimo Select umjesto Include
+                var objekti = await query
+                    .Select(o => new ObjektReadDTO
+                    {
+                        ID = o.ID,
+                        Naziv = o.Naziv,
+                        Adresa = o.Adresa,
+                        QRKod = o.QRKod,
+                        Aktivnost = o.Aktivnost,
+                        UgostiteljID = o.UgostiteljID,
+                        UgostiteljNaziv = o.Ugostitelj != null ? o.Ugostitelj.Naziv : null,
+                        PutnikID = o.PutnikID,
+                        PutnikImePrezime = o.Putnik != null ? o.Putnik.ImePrezime : null,
+                        QRKodBase64 = o.QRKod != null ? GenerateQrCodeBase64(o.QRKod) : null
+                    })
+                    .ToListAsync();
 
-                var result = objekti.Select(objekt => new ObjektReadDTO
-                {
-                    ID = objekt.ID,
-                    Naziv = objekt.Naziv,
-                    Adresa = objekt.Adresa,
-                    QRKod = objekt.QRKod,
-                    Aktivnost = objekt.Aktivnost,
-                    UgostiteljID = objekt.UgostiteljID,
-                    UgostiteljNaziv = objekt.Ugostitelj?.Naziv,
-                    PutnikID = objekt.PutnikID,
-                    PutnikImePrezime = objekt.Putnik?.ImePrezime,
-                    QRKodBase64 = GenerateQrCodeBase64(objekt.QRKod ?? $"OBJ-{objekt.ID}")
-                }).ToList();
-
-                return Ok(result);
+                return Ok(objekti);
             }
             catch (Exception ex)
             {
@@ -87,9 +86,21 @@ namespace DigitalniCjenik.Controllers
             try
             {
                 var objekt = await _context.Objekti
-                    .Include(o => o.Ugostitelj)
-                    .Include(o => o.Putnik)
-                    .FirstOrDefaultAsync(o => o.ID == id);
+                    .Where(o => o.ID == id)
+                    .Select(o => new ObjektReadDTO
+                    {
+                        ID = o.ID,
+                        Naziv = o.Naziv,
+                        Adresa = o.Adresa,
+                        QRKod = o.QRKod,
+                        Aktivnost = o.Aktivnost,
+                        UgostiteljID = o.UgostiteljID,
+                        UgostiteljNaziv = o.Ugostitelj != null ? o.Ugostitelj.Naziv : null,
+                        PutnikID = o.PutnikID,
+                        PutnikImePrezime = o.Putnik != null ? o.Putnik.ImePrezime : null,
+                        QRKodBase64 = o.QRKod != null ? GenerateQrCodeBase64(o.QRKod) : null
+                    })
+                    .FirstOrDefaultAsync();
 
                 if (objekt == null)
                     return NotFound("Objekt nije pronađen");
@@ -110,21 +121,7 @@ namespace DigitalniCjenik.Controllers
                         return Forbid("Nemate pravo pristupa ovom objektu");
                 }
 
-                var result = new ObjektReadDTO
-                {
-                    ID = objekt.ID,
-                    Naziv = objekt.Naziv,
-                    Adresa = objekt.Adresa,
-                    QRKod = objekt.QRKod,
-                    Aktivnost = objekt.Aktivnost,
-                    UgostiteljID = objekt.UgostiteljID,
-                    UgostiteljNaziv = objekt.Ugostitelj?.Naziv,
-                    PutnikID = objekt.PutnikID,
-                    PutnikImePrezime = objekt.Putnik?.ImePrezime,
-                    QRKodBase64 = GenerateQrCodeBase64(objekt.QRKod ?? $"OBJ-{objekt.ID}")
-                };
-
-                return Ok(result);
+                return Ok(objekt);
             }
             catch (Exception ex)
             {
@@ -143,12 +140,12 @@ namespace DigitalniCjenik.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                // 1. Provjera Ugostitelja
+                // Provjera Ugostitelja
                 var ugostitelj = await _context.Ugostitelji.FindAsync(dto.UgostiteljID);
                 if (ugostitelj == null)
                     return BadRequest($"Ugostitelj sa ID {dto.UgostiteljID} ne postoji");
 
-                // 2. Provjera Putnika ako je proslijeđen
+                // Provjera Putnika ako je proslijeđen
                 Korisnik? putnik = null;
                 if (dto.PutnikID.HasValue)
                 {
@@ -160,14 +157,14 @@ namespace DigitalniCjenik.Controllers
                         return BadRequest($"Putnik sa ID {dto.PutnikID} ne postoji ili nije putnik");
                 }
 
-                // 3. Provjera duplikata naziva za istog ugostitelja
+                // Provjera duplikata naziva za istog ugostitelja
                 var postojiLi = await _context.Objekti
                     .AnyAsync(o => o.Naziv == dto.Naziv && o.UgostiteljID == dto.UgostiteljID);
 
                 if (postojiLi)
                     return Conflict($"Objekt s nazivom '{dto.Naziv}' već postoji za ovog ugostitelja");
 
-                // 4. Generiranje jedinstvenog QR koda
+                // Generiranje jedinstvenog QR koda
                 var qrText = $"OBJ-{Guid.NewGuid():N}";
 
                 var objekt = new Objekt
@@ -261,16 +258,11 @@ namespace DigitalniCjenik.Controllers
                         return Conflict($"Objekt s nazivom '{dto.Naziv}' već postoji za ovog ugostitelja");
                 }
 
-                var stariQRKod = objekt.QRKod;
-
                 objekt.Naziv = dto.Naziv;
                 objekt.Adresa = dto.Adresa;
                 objekt.Aktivnost = dto.Aktivnost;
                 objekt.UgostiteljID = dto.UgostiteljID;
                 objekt.PutnikID = dto.PutnikID;
-
-
-                objekt.QRKod = stariQRKod;  
 
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Ažuriran objekt {Id}", id);
@@ -311,8 +303,6 @@ namespace DigitalniCjenik.Controllers
 
                 if (objekt.Banneri != null && objekt.Banneri.Any())
                     return BadRequest("Objekt se ne može obrisati jer ima povezane banner-e");
-
-                
 
                 _context.Objekti.Remove(objekt);
                 await _context.SaveChangesAsync();
@@ -378,9 +368,21 @@ namespace DigitalniCjenik.Controllers
             try
             {
                 var objekt = await _context.Objekti
-                    .Include(o => o.Ugostitelj)
-                    .Include(o => o.Putnik)
-                    .FirstOrDefaultAsync(o => o.QRKod == qrKod);
+                    .Where(o => o.QRKod == qrKod)
+                    .Select(o => new ObjektReadDTO
+                    {
+                        ID = o.ID,
+                        Naziv = o.Naziv,
+                        Adresa = o.Adresa,
+                        QRKod = o.QRKod,
+                        Aktivnost = o.Aktivnost,
+                        UgostiteljID = o.UgostiteljID,
+                        UgostiteljNaziv = o.Ugostitelj != null ? o.Ugostitelj.Naziv : null,
+                        PutnikID = o.PutnikID,
+                        PutnikImePrezime = o.Putnik != null ? o.Putnik.ImePrezime : null,
+                        QRKodBase64 = o.QRKod != null ? GenerateQrCodeBase64(o.QRKod) : null
+                    })
+                    .FirstOrDefaultAsync();
 
                 if (objekt == null)
                     return NotFound("Objekt nije pronađen");
@@ -388,8 +390,7 @@ namespace DigitalniCjenik.Controllers
                 if (!objekt.Aktivnost)
                     return BadRequest("Objekt je trenutno neaktivan");
 
-
-                // 1. Zabilježi skeniranje u analitiku
+                // Zabilježi skeniranje u analitiku
                 var analitika = new Analitika
                 {
                     TipDogadaja = "QR scan",
@@ -397,7 +398,7 @@ namespace DigitalniCjenik.Controllers
                     ObjektID = objekt.ID,
                     DodatniParametri = $"QR kod: {qrKod}"
                 };
-                _context.Analitika.Add(analitika);  // Dodaj u Analitiku
+                _context.Analitika.Add(analitika);
 
                 var qrKodEntity = await _context.QRKod.FirstOrDefaultAsync(q => q.Kod == qrKod);
                 if (qrKodEntity != null)
@@ -418,22 +419,7 @@ namespace DigitalniCjenik.Controllers
 
                 await _context.SaveChangesAsync();
 
-
-                var result = new ObjektReadDTO
-                {
-                    ID = objekt.ID,
-                    Naziv = objekt.Naziv,
-                    Adresa = objekt.Adresa,
-                    QRKod = objekt.QRKod,
-                    Aktivnost = objekt.Aktivnost,
-                    UgostiteljID = objekt.UgostiteljID,
-                    UgostiteljNaziv = objekt.Ugostitelj?.Naziv,
-                    PutnikID = objekt.PutnikID,
-                    PutnikImePrezime = objekt.Putnik?.ImePrezime,
-                    QRKodBase64 = GenerateQrCodeBase64(objekt.QRKod ?? $"OBJ-{objekt.ID}")
-                };
-
-                return Ok(result);
+                return Ok(objekt);
             }
             catch (Exception ex)
             {
@@ -442,9 +428,7 @@ namespace DigitalniCjenik.Controllers
             }
         }
 
-
-
-        private string GenerateQrCodeBase64(string text)
+        private static string GenerateQrCodeBase64(string text)
         {
             if (string.IsNullOrEmpty(text))
                 return string.Empty;
