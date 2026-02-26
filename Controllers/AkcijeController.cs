@@ -79,7 +79,9 @@ namespace DigitalniCjenik.Controllers
                     Slika = a.Slika,
                     Aktivna = a.Aktivna,
                     ObjektID = a.ObjektID,
-                    ObjektNaziv = a.Objekt != null ? a.Objekt.Naziv : null
+                    ObjektNaziv = a.Objekt != null ? a.Objekt.Naziv : null,
+                    ArtiklID = a.ArtiklID,
+                    ArtiklNaziv = a.Artikl != null ? a.Artikl.Naziv : null
                 })
                 .ToListAsync();
 

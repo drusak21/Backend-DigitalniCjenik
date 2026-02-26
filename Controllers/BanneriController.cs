@@ -174,7 +174,7 @@ namespace DigitalniCjenik.Controllers
 
         // PATCH: api/banneri/{id}/aktiviraj
         [HttpPatch("{id}/aktiviraj")]
-        [Authorize(Roles = "Administrator")]
+        [Authorize(Roles = "Administrator, Ugostitelj")]
         public async Task<IActionResult> AktivirajBanner(int id, [FromBody] bool aktivan)
         {
             var banner = await _context.Banneri.FindAsync(id);

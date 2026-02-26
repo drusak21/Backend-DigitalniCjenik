@@ -135,6 +135,7 @@ namespace DigitalniCjenik.Controllers
         [Authorize(Roles = "Administrator,Ugostitelj")]
         public async Task<IActionResult> UpdateCjenik(int id, CjenikCreateUpdateDTO dto)
         {
+            // Samo dohvati cjenik i njegove artikle, ne treba nam ThenInclude
             var cjenik = await _context.Cjenici
                 .Include(c => c.CjenikArtikli)
                 .FirstOrDefaultAsync(c => c.ID == id);
@@ -145,27 +146,63 @@ namespace DigitalniCjenik.Controllers
             if (cjenik.Status != "u pripremi")
                 return BadRequest("Samo cjenici u pripremi se mogu uređivati");
 
-            // Obriši stare artikle
-            _context.CjenikArtikli.RemoveRange(cjenik.CjenikArtikli!);
-
-            // Dodaj nove
-            foreach (var a in dto.Artikli)
+            // Za ugostitelja - ne diraj zaključane artikle!
+            if (User.IsInRole("Ugostitelj"))
             {
-                // Provjera zaključanih za ugostitelja
-                if (User.IsInRole("Ugostitelj"))
-                {
-                    var artikl = await _context.Artikli.FindAsync(a.ArtiklID);
-                    if (artikl?.Zakljucan == true)
-                        return BadRequest($"Artikl {artikl.Naziv} je zaključan");
-                }
+                // Trebamo dohvatiti ID-ove zaključanih artikala
+                var zakljucaniArtikliIds = await _context.Artikli
+                    .Where(a => a.Zakljucan)
+                    .Select(a => a.ID)
+                    .ToListAsync();
 
-                _context.CjenikArtikli.Add(new CjenikArtikl
+                // Pronađi zaključane artikle u cjeniku
+                var zakljucaniUCjeniku = cjenik.CjenikArtikli?
+                    .Where(ca => zakljucaniArtikliIds.Contains(ca.ArtiklID))
+                    .ToList() ?? new List<CjenikArtikl>();
+
+                // Obriši samo one koji NISU zaključani
+                var zaBrisanje = cjenik.CjenikArtikli?
+                    .Where(ca => !zakljucaniArtikliIds.Contains(ca.ArtiklID))
+                    .ToList();
+
+                if (zaBrisanje != null && zaBrisanje.Any())
+                    _context.CjenikArtikli.RemoveRange(zaBrisanje);
+
+                // Dodaj nove (samo slobodne)
+                foreach (var a in dto.Artikli)
                 {
-                    CjenikID = id,
-                    ArtiklID = a.ArtiklID,
-                    Cijena = a.Cijena,
-                    RedoslijedPrikaza = a.RedoslijedPrikaza
-                });
+                    // Provjeri je li zaključan
+                    var jeZakljucan = await _context.Artikli
+                        .Where(art => art.ID == a.ArtiklID && art.Zakljucan)
+                        .AnyAsync();
+
+                    if (jeZakljucan)
+                        continue; // Preskoči zaključane
+
+                    _context.CjenikArtikli.Add(new CjenikArtikl
+                    {
+                        CjenikID = id,
+                        ArtiklID = a.ArtiklID,
+                        Cijena = a.Cijena,
+                        RedoslijedPrikaza = a.RedoslijedPrikaza
+                    });
+                }
+            }
+            else
+            {
+                // Administrator - može sve (briše sve)
+                _context.CjenikArtikli.RemoveRange(cjenik.CjenikArtikli!);
+
+                foreach (var a in dto.Artikli)
+                {
+                    _context.CjenikArtikli.Add(new CjenikArtikl
+                    {
+                        CjenikID = id,
+                        ArtiklID = a.ArtiklID,
+                        Cijena = a.Cijena,
+                        RedoslijedPrikaza = a.RedoslijedPrikaza
+                    });
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(dto.Naziv))
@@ -222,6 +259,30 @@ namespace DigitalniCjenik.Controllers
 
             await _context.SaveChangesAsync();
             return Ok("Cjenik potvrđen");
+        }
+
+        // POST: api/cjenici/{id}/odbij
+        [HttpPost("{id}/odbij")]
+        [Authorize(Roles = "Administrator,Putnik")]
+        public async Task<IActionResult> OdbijCjenik(int id)
+        {
+            var cjenik = await _context.Cjenici
+                .Include(c => c.Objekt)
+                .FirstOrDefaultAsync(c => c.ID == id);
+
+            if (cjenik == null)
+                return NotFound("Cjenik nije pronađen.");
+
+            if (cjenik.Status != "na potvrdi")
+                return BadRequest("Samo cjenici na potvrdi se mogu odbiti.");
+
+            // Vrati status u "u pripremi" (ugostitelj može nastaviti uređivati)
+            cjenik.Status = "u pripremi";
+
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Cjenik je odbijen i vraćen u pripremu.");
         }
 
         // GET: api/cjenici/{id}/povijest
