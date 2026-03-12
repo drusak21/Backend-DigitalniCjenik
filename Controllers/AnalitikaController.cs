@@ -152,23 +152,21 @@ namespace DigitalniCjenik.Controllers
         public async Task<IActionResult> GetDashboard([FromQuery] DateTime? datumOd = null, [FromQuery] DateTime? datumDo = null)
         {
             var odDatuma = (datumOd?.ToUniversalTime() ?? DateTime.UtcNow.AddDays(-30)).Date;
-            var doDatuma = (datumDo?.ToUniversalTime() ?? DateTime.UtcNow).Date.AddDays(1).AddTicks(-1); 
+            var doDatuma = (datumDo?.ToUniversalTime() ?? DateTime.UtcNow).Date.AddDays(1).AddTicks(-1);
 
             var ukupnoQr = await _context.Analitika
                 .CountAsync(a => a.TipDogadaja == "QR scan" &&
                                  a.DatumVrijeme >= odDatuma &&
                                  a.DatumVrijeme <= doDatuma);
 
-            var ukupnoOtvorenih = await _context.Analitika
-                .CountAsync(a => a.TipDogadaja == "otvoren cjenik" &&
-                                 a.DatumVrijeme >= odDatuma &&
-                                 a.DatumVrijeme <= doDatuma);
+            var ukupnoOtvorenih = ukupnoQr;
 
             var ukupnoKlikova = await _context.Analitika
                 .CountAsync(a => a.TipDogadaja != null &&
                                  a.TipDogadaja.StartsWith("klik") &&
                                  a.DatumVrijeme >= odDatuma &&
                                  a.DatumVrijeme <= doDatuma);
+
 
             var poDanima = await _context.Analitika
                 .Where(a => a.DatumVrijeme >= odDatuma && a.DatumVrijeme <= doDatuma)
@@ -186,7 +184,7 @@ namespace DigitalniCjenik.Controllers
             return Ok(new
             {
                 ukupnoQr,
-                ukupnoOtvorenih,
+                ukupnoOtvorenih, 
                 ukupnoKlikova,
                 poDanima
             });
