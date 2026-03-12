@@ -167,7 +167,6 @@ namespace DigitalniCjenik.Controllers
                                  a.DatumVrijeme >= odDatuma &&
                                  a.DatumVrijeme <= doDatuma);
 
-
             var poDanima = await _context.Analitika
                 .Where(a => a.DatumVrijeme >= odDatuma && a.DatumVrijeme <= doDatuma)
                 .GroupBy(a => a.DatumVrijeme.Date)
@@ -175,7 +174,7 @@ namespace DigitalniCjenik.Controllers
                 {
                     Datum = g.Key,
                     QR = g.Count(a => a.TipDogadaja == "QR scan"),
-                    Otvaranja = g.Count(a => a.TipDogadaja == "otvoren cjenik"),
+                    Otvaranja = g.Count(a => a.TipDogadaja == "QR scan"),
                     Klikovi = g.Count(a => a.TipDogadaja != null && a.TipDogadaja.StartsWith("klik"))
                 })
                 .OrderBy(g => g.Datum)
@@ -184,7 +183,7 @@ namespace DigitalniCjenik.Controllers
             return Ok(new
             {
                 ukupnoQr,
-                ukupnoOtvorenih, 
+                ukupnoOtvorenih,
                 ukupnoKlikova,
                 poDanima
             });
