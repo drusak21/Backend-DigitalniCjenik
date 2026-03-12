@@ -71,7 +71,7 @@ namespace DigitalniCjenik.Controllers
 
             var artikl = new Artikl
             {
-                Naziv = dto.Naziv.Trim(), 
+                Naziv = dto.Naziv.Trim(),
                 Opis = dto.Opis,
                 Cijena = dto.Cijena,
                 SastavAlergeni = dto.SastavAlergeni,
@@ -131,7 +131,6 @@ namespace DigitalniCjenik.Controllers
             return Ok("Artikl obrisan.");
         }
 
-        // POST: api/artikli/import
         [HttpPost("import")]
         [Authorize(Roles = "Administrator,Ugostitelj")]
         public async Task<IActionResult> ImportCsv(IFormFile file)
@@ -152,23 +151,25 @@ namespace DigitalniCjenik.Controllers
 
                 var naziv = columns[0].Trim();
                 var cijena = decimal.Parse(columns[1], CultureInfo.InvariantCulture);
-                var kategorijaNaziv = columns[2].Trim();
+
+
+                if (!int.TryParse(columns[2].Trim(), out int kategorijaID))
+                    continue;
+
 
                 var kategorija = await _context.Kategorije
-                    .FirstOrDefaultAsync(k => k.Naziv == kategorijaNaziv);
+                    .FirstOrDefaultAsync(k => k.ID == kategorijaID);
 
                 if (kategorija == null)
                 {
-                    kategorija = new Kategorija { Naziv = kategorijaNaziv };
-                    _context.Kategorije.Add(kategorija);
-                    await _context.SaveChangesAsync();
+                    return BadRequest($"Kategorija sa ID {kategorijaID} ne postoji u bazi.");
                 }
 
                 var artikl = new Artikl
                 {
                     Naziv = naziv,
                     Cijena = cijena,
-                    KategorijaID = kategorija.ID
+                    KategorijaID = kategorija.ID  
                 };
 
                 _context.Artikli.Add(artikl);
@@ -177,7 +178,8 @@ namespace DigitalniCjenik.Controllers
             await _context.SaveChangesAsync();
             return Ok("CSV import uspješno završen.");
         }
-    }
 
+
+    }
 }
 
