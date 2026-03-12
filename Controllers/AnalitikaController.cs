@@ -149,24 +149,29 @@ namespace DigitalniCjenik.Controllers
         // GET: api/analitika/dashboard
         [HttpGet("dashboard")]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> GetDashboard()
+        public async Task<IActionResult> GetDashboard([FromQuery] DateTime? datumOd = null, [FromQuery] DateTime? datumDo = null)
         {
-            var danas = DateTime.UtcNow.Date;
-            var prije7dana = danas.AddDays(-7);
+            var odDatuma = (datumOd?.ToUniversalTime() ?? DateTime.UtcNow.AddDays(-30)).Date;
+            var doDatuma = (datumDo?.ToUniversalTime() ?? DateTime.UtcNow).Date.AddDays(1).AddTicks(-1); 
 
-            // Ukupni brojevi
             var ukupnoQr = await _context.Analitika
-                .CountAsync(a => a.TipDogadaja == "QR scan" && a.DatumVrijeme >= prije7dana);
+                .CountAsync(a => a.TipDogadaja == "QR scan" &&
+                                 a.DatumVrijeme >= odDatuma &&
+                                 a.DatumVrijeme <= doDatuma);
 
             var ukupnoOtvorenih = await _context.Analitika
-                .CountAsync(a => a.TipDogadaja == "otvoren cjenik" && a.DatumVrijeme >= prije7dana);
+                .CountAsync(a => a.TipDogadaja == "otvoren cjenik" &&
+                                 a.DatumVrijeme >= odDatuma &&
+                                 a.DatumVrijeme <= doDatuma);
 
             var ukupnoKlikova = await _context.Analitika
-                .CountAsync(a => a.TipDogadaja != null && a.TipDogadaja.StartsWith("klik") && a.DatumVrijeme >= prije7dana);
+                .CountAsync(a => a.TipDogadaja != null &&
+                                 a.TipDogadaja.StartsWith("klik") &&
+                                 a.DatumVrijeme >= odDatuma &&
+                                 a.DatumVrijeme <= doDatuma);
 
-            // Grupiranje po danima
             var poDanima = await _context.Analitika
-                .Where(a => a.DatumVrijeme >= prije7dana)
+                .Where(a => a.DatumVrijeme >= odDatuma && a.DatumVrijeme <= doDatuma)
                 .GroupBy(a => a.DatumVrijeme.Date)
                 .Select(g => new
                 {
