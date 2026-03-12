@@ -66,6 +66,12 @@ namespace DigitalniCjenik.Services
                 return null;
             }
 
+            if (!korisnik.Aktivnost)
+            {
+                _logger.LogWarning("Pokušaj prijave neaktivnog korisnika: {Email}", email);
+                return null;
+            }
+
             if (korisnik.LozinkaHash == null || korisnik.LozinkaSalt == null)
             {
                 _logger.LogWarning("Local login failed - no password hash: {Email}", email);
@@ -103,6 +109,12 @@ namespace DigitalniCjenik.Services
 
                 // 2. Pronađi ili kreiraj korisnika u lokalnoj bazi
                 var korisnik = FindOrCreateLdapUser(ldapUser);
+
+                if (!korisnik.Aktivnost)
+                {
+                    _logger.LogWarning("Pokušaj prijave neaktivnog LDAP korisnika: {Email}", email);
+                    return null;
+                }
 
                 // 3. Generiraj JWT token
                 _logger.LogInformation("LDAP login successful: {Email}", email);
